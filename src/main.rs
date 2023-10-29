@@ -44,9 +44,11 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let redis_url = std::env::var("REDIS_URL")?;
-    let listen_url = &std::env::var("LISTEN_URL")?.parse()?;
+    let listen_url = &std::env::var("LISTEN_URL")?
+        .parse()
+        .context("invalid LISTEN_URL")?;
 
-    let redis_client = redis::Client::open(redis_url)?;
+    let redis_client = redis::Client::open(redis_url).context("redis open failed")?;
     let redis_conn_info = redis_client.get_connection_info().clone();
     let state = Arc::new(AppState {
         redis: redis_client,
