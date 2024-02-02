@@ -29,6 +29,7 @@ use log::{error, info, warn, LevelFilter};
 use redis::{AsyncCommands, RedisError};
 use std::{convert::Infallible, sync::Arc};
 use systemd_journal_logger::{connected_to_journal, JournalLog};
+use tokio::net::TcpListener;
 
 struct AppState {
     redis: redis::Client,
@@ -44,9 +45,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let redis_url = std::env::var("REDIS_URL")?;
-    let listen_url = &std::env::var("LISTEN_URL")?
-        .parse()
-        .context("invalid LISTEN_URL")?;
+    let listen_url = std::env::var("LISTEN_URL")?;
 
     let redis_client = redis::Client::open(redis_url).context("redis open failed")?;
     let redis_conn_info = redis_client.get_connection_info().clone();
@@ -61,9 +60,8 @@ async fn main() -> anyhow::Result<()> {
     info!("Listening on {}", listen_url);
     info!("Redis connection: {:?}", redis_conn_info);
 
-    axum::Server::bind(listen_url)
-        .serve(app.into_make_service())
-        .await?;
+    let listener = TcpListener::bind(listen_url).await.context("bind failed")?;
+    axum::serve(listener, app).await?;
 
     Ok(())
 }

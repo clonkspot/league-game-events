@@ -8,8 +8,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
-axum = "0.6"
-hyper = { version = "0.14", features = ["full"] }
+axum = "0.7"
+hyper = { version = "1", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
 redis = { version = "0.23", features = ["tokio-comp", "connection-manager"] }
 futures-util = "0.3"
