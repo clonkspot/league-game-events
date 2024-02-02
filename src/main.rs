@@ -75,15 +75,19 @@ async fn games_init(redis_client: &redis::Client) -> Result<impl Stream<Item = E
         .smembers("league:active_games")
         .await
         .context("smembers league:active_games")?;
-    let active_games: Vec<Option<String>> = redis_conn
-        .get(
-            active_game_ids
-                .iter()
-                .map(|id| format!("league:game:{}", id))
-                .collect::<Vec<String>>(),
-        )
-        .await
-        .context("mget <active game ids>")?;
+    let active_games: Vec<Option<String>> = if active_game_ids.is_empty() {
+        Vec::new()
+    } else {
+        redis_conn
+            .get(
+                active_game_ids
+                    .iter()
+                    .map(|id| format!("league:game:{}", id))
+                    .collect::<Vec<String>>(),
+            )
+            .await
+            .context("mget <active game ids>")?
+    };
 
     // Remove expired games from the set.
     for (id, game) in active_game_ids.iter().zip(active_games.iter()) {
