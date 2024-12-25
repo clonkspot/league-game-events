@@ -11,7 +11,7 @@ anyhow = "1"
 axum = "0.7"
 hyper = { version = "1", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
-redis = { version = "0.23", features = ["tokio-comp", "connection-manager"] }
+redis = { version = "0.27", features = ["tokio-comp", "connection-manager"] }
 futures-util = "0.3"
 itertools = "0.11"
 log = "0.4"

@@ -68,7 +68,7 @@ async fn main() -> anyhow::Result<()> {
 
 /// Get init message with array of games.
 async fn games_init(redis_client: &redis::Client) -> Result<impl Stream<Item = Event>, AppError> {
-    let mut redis_conn = redis_client.get_async_connection().await?;
+    let mut redis_conn = redis_client.get_multiplexed_async_connection().await?;
     let active_game_ids: Vec<String> = redis_conn
         .smembers("league:active_games")
         .await
@@ -91,7 +91,7 @@ async fn games_init(redis_client: &redis::Client) -> Result<impl Stream<Item = E
     for (id, game) in active_game_ids.iter().zip(active_games.iter()) {
         if game.is_none() {
             warn!("Removing expired league:active_games {}", id);
-            redis_conn
+            let _: () = redis_conn
                 .srem("league:active_games", id)
                 .await
                 .context("srem league:active_games")?;
@@ -111,7 +111,7 @@ async fn games_init(redis_client: &redis::Client) -> Result<impl Stream<Item = E
 async fn game_events(
     State(state): State<Arc<AppState>>,
 ) -> Result<Sse<impl Stream<Item = Result<Event, Infallible>>>, AppError> {
-    let mut pubsub = state.redis.get_async_connection().await?.into_pubsub();
+    let mut pubsub = state.redis.get_async_pubsub().await?;
 
     let stream_init = games_init(&state.redis).await?;
 
@@ -127,7 +127,7 @@ async fn game_events(
             let game_id: Result<String, RedisError> = msg.get_payload();
             let state = state.clone();
             async move {
-                let mut redis_conn = state.redis.get_async_connection().await?;
+                let mut redis_conn = state.redis.get_multiplexed_async_connection().await?;
                 let game: String = redis_conn.get(format!("league:game:{}", game_id?)).await?;
                 anyhow::Result::<_>::Ok(Event::default().event(event).data(game))
             }
